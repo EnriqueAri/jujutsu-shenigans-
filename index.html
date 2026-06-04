@@ -1,1228 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>⚡ Cursed Tokyo</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@500;700&display=swap');
-*{margin:0;padding:0;box-sizing:border-box;}
-body{background:#000;overflow:hidden;font-family:'Rajdhani',sans-serif;color:#fff;user-select:none;}
-canvas{display:block;}
-#ui{position:fixed;inset:0;pointer-events:none;}
-
-/* ── MENU ── */
-#menu{position:fixed;inset:0;background:linear-gradient(160deg,#050a14,#0a0518);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  z-index:100;overflow-y:auto;}
-#menu h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(48px,8vw,90px);
-  letter-spacing:10px;background:linear-gradient(135deg,#00d4ff,#ff2d7a);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 0 30px rgba(0,212,255,.6));margin-bottom:4px;}
-#menu .sub{font-size:13px;letter-spacing:5px;color:rgba(255,255,255,.35);
-  text-transform:uppercase;margin-bottom:30px;}
-.panel{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.2);
-  border-radius:14px;padding:28px 32px;width:min(480px,92vw);}
-label{display:block;font-size:10px;letter-spacing:3px;color:#00d4ff;
-  text-transform:uppercase;margin-bottom:5px;margin-top:14px;}
-label:first-child{margin-top:0;}
-input[type=text]{width:100%;background:rgba(0,0,0,.5);border:1px solid rgba(0,212,255,.25);
-  border-radius:7px;padding:10px 13px;color:#fff;font-family:'Rajdhani',sans-serif;
-  font-size:15px;outline:none;}
-input[type=text]:focus{border-color:#00d4ff;}
-.char-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:6px;}
-.ccard{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);border-radius:9px;
-  padding:8px 4px;cursor:pointer;text-align:center;transition:all .18s;pointer-events:all;}
-.ccard:hover{border-color:rgba(0,212,255,.5);}
-.ccard.sel{border-color:#00d4ff;background:rgba(0,212,255,.13);
-  box-shadow:0 0 14px rgba(0,212,255,.25);}
-.ccard .ico{font-size:26px;display:block;margin-bottom:3px;}
-.ccard .nm{font-size:8px;letter-spacing:.5px;color:rgba(255,255,255,.55);
-  text-transform:uppercase;line-height:1.3;}
-#playBtn{width:100%;margin-top:18px;padding:14px;border:none;border-radius:9px;
-  background:linear-gradient(135deg,#00d4ff,#0077bb);color:#000;
-  font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:4px;
-  cursor:pointer;pointer-events:all;transition:all .18s;}
-#playBtn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,212,255,.5);}
-#playBtn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
-#errTxt{color:#ff2d7a;font-size:12px;text-align:center;margin-top:10px;min-height:16px;}
-.setup-note{margin-top:14px;padding:12px;background:rgba(0,212,255,.04);
-  border:1px solid rgba(0,212,255,.1);border-radius:8px;
-  font-size:11px;color:rgba(255,255,255,.4);line-height:1.7;}
-.setup-note b{color:#00d4ff;}
-
-/* ── HUD ── */
-#hud{display:none;}
-#hud.show{display:block;}
-
-/* HP bar */
-#hpWrap{position:fixed;bottom:98px;left:20px;width:220px;}
-#charLabel{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:3px;
-  color:#00d4ff;margin-bottom:1px;}
-#kdLabel{font-size:11px;color:rgba(255,255,255,.35);letter-spacing:2px;margin-bottom:6px;}
-#hpBar{height:9px;background:rgba(255,255,255,.1);border-radius:5px;overflow:hidden;}
-#hpFill{height:100%;background:#00d4ff;border-radius:5px;transition:width .12s;}
-#hpNum{font-size:11px;color:rgba(255,255,255,.5);margin-top:3px;font-family:monospace;}
-
-/* Move bar */
-#moves{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
-  display:flex;gap:8px;}
-.mbox{width:68px;height:64px;background:rgba(0,0,0,.75);
-  border:1px solid rgba(255,255,255,.15);border-radius:9px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  position:relative;overflow:hidden;}
-.mbox.rdy{border-color:rgba(0,212,255,.5);}
-.mbox.ult{border-color:rgba(255,45,122,.35);}
-.mbox.ult.rdy{border-color:#ff2d7a;box-shadow:0 0 10px rgba(255,45,122,.4);}
-.mbox .mk{font-family:'Bebas Neue',sans-serif;font-size:20px;}
-.mbox .mn{font-size:7.5px;color:rgba(255,255,255,.45);text-transform:uppercase;
-  text-align:center;padding:0 3px;line-height:1.2;}
-.mbox .cdv{position:absolute;inset:0;background:rgba(0,0,0,.6);
-  display:flex;align-items:center;justify-content:center;
-  font-family:monospace;font-size:13px;color:#ff2d7a;}
-
-/* Leaderboard */
-#lb{position:fixed;top:14px;right:14px;width:200px;
-  background:rgba(0,0,0,.7);border:1px solid rgba(0,212,255,.2);
-  border-radius:11px;padding:10px 12px;}
-#lb h3{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:3px;
-  color:#00d4ff;text-align:center;margin-bottom:6px;}
-.lbrow{display:flex;align-items:center;gap:4px;padding:2px 0;
-  font-size:12px;border-bottom:1px solid rgba(255,255,255,.04);}
-.lbrank{color:rgba(255,255,255,.3);width:18px;font-size:10px;}
-.lbname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.lbkd{font-family:monospace;font-size:11px;color:#ffe033;}
-.lbrow.me .lbname{color:#00d4ff;}
-
-/* Kill feed */
-#kf{position:fixed;bottom:155px;left:14px;width:310px;}
-.kfe{font-size:12px;padding:3px 9px;margin-bottom:3px;border-radius:5px;
-  background:rgba(0,0,0,.65);border-left:2px solid #ff2d7a;
-  animation:kfin .25s ease;}
-@keyframes kfin{from{opacity:0;transform:translateX(-8px);}to{opacity:1;transform:none;}}
-
-/* Status dot */
-#dot{position:fixed;top:14px;left:14px;display:flex;align-items:center;gap:6px;
-  font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);}
-#dotc{width:7px;height:7px;border-radius:50%;background:#f00;}
-#dotc.on{background:#0f8;box-shadow:0 0 6px #0f8;}
-
-/* TAB hint */
-#thint{position:fixed;top:14px;left:50%;transform:translateX(-50%);
-  font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.2);text-transform:uppercase;}
-
-/* Death screen */
-#dead{position:fixed;inset:0;background:rgba(180,0,0,.18);
-  display:none;align-items:center;justify-content:center;flex-direction:column;}
-#dead.show{display:flex;}
-#dead h2{font-family:'Bebas Neue',sans-serif;font-size:72px;letter-spacing:8px;
-  color:#ff2d2d;text-shadow:0 0 40px rgba(255,0,0,.7);}
-#dead p{font-size:14px;letter-spacing:4px;color:rgba(255,255,255,.4);text-transform:uppercase;}
-
-/* Hit flash */
-#flash{position:fixed;inset:0;background:rgba(255,20,20,.3);
-  pointer-events:none;opacity:0;transition:opacity .08s;}
-
-/* Char select overlay */
-#cso{position:fixed;inset:0;background:rgba(4,6,12,.97);z-index:90;
-  display:none;flex-direction:column;align-items:center;
-  overflow-y:auto;padding:20px 16px 40px;}
-#cso.show{display:flex;}
-#cso h2{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:5px;
-  color:#00d4ff;margin-bottom:18px;margin-top:10px;}
-.cso-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-  gap:12px;max-width:1000px;width:100%;}
-.cso-card{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.15);
-  border-radius:13px;padding:16px 12px;cursor:pointer;
-  transition:all .2s;text-align:center;pointer-events:all;}
-.cso-card:hover,.cso-card.sel2{border-color:#00d4ff;background:rgba(0,212,255,.11);
-  transform:translateY(-3px);box-shadow:0 10px 26px rgba(0,212,255,.18);}
-.cso-ico{font-size:46px;margin-bottom:8px;}
-.cso-name{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;margin-bottom:2px;}
-.cso-origin{font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.35);
-  text-transform:uppercase;margin-bottom:10px;}
-.sbar{height:4px;background:rgba(255,255,255,.1);border-radius:3px;margin:2px 0 4px;}
-.sfill{height:100%;border-radius:3px;}
-.slabel{display:flex;justify-content:space-between;font-size:9px;
-  color:rgba(255,255,255,.4);margin-bottom:1px;}
-.cso-moves{margin-top:8px;text-align:left;}
-.cso-move{font-size:9.5px;color:rgba(255,255,255,.45);padding:1px 0;}
-.cso-move span{color:#00d4ff;font-family:monospace;}
-#cso-confirm{margin-top:18px;padding:11px 44px;border:none;border-radius:8px;
-  background:linear-gradient(135deg,#00d4ff,#0077bb);color:#000;
-  font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;
-  cursor:pointer;pointer-events:all;}
-#cso-confirm:hover{box-shadow:0 0 20px rgba(0,212,255,.5);}
-#cso-hint{font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.25);
-  text-transform:uppercase;margin-top:12px;}
-
-/* Crosshair */
-#xhair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:22px;height:22px;pointer-events:none;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jujutsu Arena - Multiplayer</title>
+    <style>
+        body { margin: 0; background: #0f0c1b; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
+        #menu { background: rgba(20, 16, 36, 0.95); border: 2px solid #6b11ff; border-radius: 12px; padding: 30px; width: 350px; text-align: center; box-shadow: 0 0 30px rgba(107, 17, 255, 0.4); z-index: 10; }
+        h1 { font-size: 2.2rem; margin-bottom: 20px; color: #a16eff; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(161, 110, 255, 0.5); }
+        input { width: 90%; padding: 12px; margin: 10px 0; background: #1a1530; border: 1px solid #4a3b75; border-radius: 6px; color: #fff; font-size: 1rem; text-align: center; }
+        input:focus { border-color: #a16eff; outline: none; }
+        button { width: 97%; padding: 14px; margin-top: 15px; background: linear-gradient(45deg, #6b11ff, #a16eff); border: none; border-radius: 6px; color: #fff; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(107, 17, 255, 0.4); }
+        #arena { display: none; position: absolute; width: 100vw; height: 100vh; background: radial-gradient(circle, #251c4a 0%, #0d0822 100%); }
+        .player { position: absolute; width: 40px; height: 40px; background: #00ffcc; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem; box-shadow: 0 0 15px #00ffcc; transition: top 0.1s, left 0.1s; color: #000; }
+        .player.remote { background: #ff0055; box-shadow: 0 0 15px #ff0055; color: #fff; }
+        .name-tag { position: absolute; top: -25px; background: rgba(0,0,0,0.7); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; white-space: nowrap; color: #fff; }
+    </style>
 </head>
 <body>
 
-<!-- ═══════════ MENU ═══════════ -->
-<div id="menu">
-  <h1>⚡ CURSED TOKYO</h1>
-  <div class="sub">JJK-Inspired Multiplayer Battle</div>
-  <div class="panel">
-    <label>Server URL (wss://)</label>
-    <input type="text" id="srvUrl" placeholder="wss://your-server.up.railway.app" value="">
-    <label>Your Name</label>
-    <input type="text" id="pName" placeholder="Enter name" maxlength="16" value="Player">
-    <label>Choose Character</label>
-    <div class="char-row" id="charRow"></div>
-    <button id="playBtn" onclick="startGame()">JOIN BATTLE</button>
-    <div id="errTxt"></div>
-    <div class="setup-note">
-      <b>To play with friends:</b> deploy <b>server.js</b> + <b>package.json</b> on
-      <b>railway.app</b> (free). Get the <b>wss://</b> URL and paste above.
-      Both players use the same URL.
+    <div id="menu">
+        <h1>⚡ CURSED TOKYO </h1>
+        <p style="color: #8c82b0; font-size: 0.9rem; margin-top: -15px; margin-bottom: 25px;">JJK-Inspired Realtime Arena</p>
+        <input type="text" id="username" placeholder="Enter Your Name" value="Sorcerer">
+        <input type="text" id="lobbyId" placeholder="Lobby Code (Leave blank to create)">
+        <button id="joinBtn">Enter Arena</button>
     </div>
-  </div>
-</div>
 
-<!-- ═══════════ GAME CANVAS ═══════════ -->
-<canvas id="c"></canvas>
-
-<!-- ═══════════ HUD ═══════════ -->
-<div id="hud">
-  <div id="dot"><div id="dotc"></div><span id="dotlbl">Offline</span></div>
-  <div id="thint">TAB — Switch Character</div>
-
-  <div id="hpWrap">
-    <div id="charLabel">—</div>
-    <div id="kdLabel">K: 0  D: 0</div>
-    <div id="hpBar"><div id="hpFill"></div></div>
-    <div id="hpNum">100 / 100</div>
-  </div>
-
-  <div id="moves"></div>
-
-  <div id="lb"><h3>⚡ Leaderboard</h3><div id="lbRows"></div></div>
-  <div id="kf"></div>
-
-  <!-- Crosshair -->
-  <div id="xhair">
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-      <line x1="11" y1="1" x2="11" y2="7" stroke="white" stroke-width="1.5" opacity=".7"/>
-      <line x1="11" y1="15" x2="11" y2="21" stroke="white" stroke-width="1.5" opacity=".7"/>
-      <line x1="1" y1="11" x2="7" y2="11" stroke="white" stroke-width="1.5" opacity=".7"/>
-      <line x1="15" y1="11" x2="21" y2="11" stroke="white" stroke-width="1.5" opacity=".7"/>
-      <circle cx="11" cy="11" r="2" stroke="white" stroke-width="1.2" opacity=".5"/>
-    </svg>
-  </div>
-</div>
-
-<div id="dead">
-  <h2>ELIMINATED</h2>
-  <p>Respawning in 5 seconds...</p>
-</div>
-<div id="flash"></div>
-
-<!-- ═══════════ CHAR SELECT OVERLAY ═══════════ -->
-<div id="cso">
-  <h2>CHOOSE YOUR CHARACTER</h2>
-  <div class="cso-grid" id="csoGrid"></div>
-  <button id="cso-confirm" onclick="confirmChar()">CONFIRM SWITCH</button>
-  <div id="cso-hint">TAB to close · Click to select · ENTER to confirm</div>
-</div>
-
-<script>
-'use strict';
-// ═══════════════════════════════════════════════════════════
-//  CHARACTER DATA
-// ═══════════════════════════════════════════════════════════
-const CHARS = {
-  honored_one:{
-    name:'The Honored One', origin:'Gojo Satoru', ico:'🔵',
-    color:'#00d4ff', maxHp:120, speed:5.5,
-    stats:{hp:55,spd:72,pow:82,rng:88},
-    moves:{
-      Q:{name:'Infinity Veil', dmg:0,   cd:3,  range:3,  type:'defense',    short:'Veil'},
-      E:{name:'Blue Pull',     dmg:45,  cd:4,  range:15, type:'projectile', short:'Blue'},
-      R:{name:'Red Crush',     dmg:60,  cd:6,  range:15, type:'projectile', short:'Red'},
-      F:{name:'Hollow Purple', dmg:150, cd:20, range:20, type:'ultimate',   short:'Purple'},
-    }
-  },
-  soul_striker:{
-    name:'Soul Striker', origin:'Yuji Itadori', ico:'🟠',
-    color:'#ff8c20', maxHp:180, speed:6.2,
-    stats:{hp:88,spd:90,pow:74,rng:38},
-    moves:{
-      Q:{name:'Divergent Fist', dmg:55,  cd:2,  range:3.5,type:'melee',     short:'Fist'},
-      E:{name:'Black Flash',    dmg:90,  cd:8,  range:3.5,type:'melee',     short:'Flash'},
-      R:{name:'Boost Dash',     dmg:30,  cd:3,  range:8,  type:'dash',      short:'Dash'},
-      F:{name:'Pummel Storm',   dmg:200, cd:25, range:4,  type:'ultimate',  short:'Storm'},
-    }
-  },
-  shadow_summoner:{
-    name:'Shadow Summoner', origin:'Megumi Fushiguro', ico:'🌑',
-    color:'#8866dd', maxHp:150, speed:5.0,
-    stats:{hp:72,spd:60,pow:68,rng:74},
-    moves:{
-      Q:{name:'Divine Dogs',   dmg:40,  cd:5,  range:12, type:'summon',    short:'Dogs'},
-      E:{name:'Shadow Bind',   dmg:20,  cd:6,  range:10, type:'cc',        short:'Bind'},
-      R:{name:'Shadow Garden', dmg:35,  cd:10, range:8,  type:'aoe',       short:'Garden'},
-      F:{name:'Mahoraga',      dmg:180, cd:30, range:15, type:'ultimate',  short:'Mahoraga'},
-    }
-  },
-  king_of_curses:{
-    name:'King of Curses', origin:'Ryomen Sukuna', ico:'👑',
-    color:'#dd2222', maxHp:200, speed:5.0,
-    stats:{hp:100,spd:55,pow:100,rng:68},
-    moves:{
-      Q:{name:'Dismantle',         dmg:70,  cd:2,  range:12, type:'projectile',short:'Cut'},
-      E:{name:'Cleave',            dmg:100, cd:5,  range:5,  type:'melee',     short:'Cleave'},
-      R:{name:'Flame Arrow',       dmg:65,  cd:4,  range:14, type:'projectile',short:'Arrow'},
-      F:{name:'Malevolent Shrine', dmg:220, cd:35, range:18, type:'ultimate',  short:'Shrine'},
-    }
-  },
-  iron_maiden:{
-    name:'Iron Maiden', origin:'Nobara Kugisaki', ico:'⚡',
-    color:'#ffcc00', maxHp:130, speed:5.5,
-    stats:{hp:63,spd:68,pow:78,rng:84},
-    moves:{
-      Q:{name:'Hairpin Throw', dmg:50,  cd:3,  range:14, type:'projectile', short:'Pin'},
-      E:{name:'Straw Doll',    dmg:60,  cd:5,  range:14, type:'curse',      short:'Doll'},
-      R:{name:'Resonance',     dmg:80,  cd:8,  range:12, type:'curse',      short:'Resonate'},
-      F:{name:'Hairpin Rain',  dmg:190, cd:28, range:16, type:'ultimate',   short:'Rain'},
-    }
-  },
-};
-const CHAR_KEYS = Object.keys(CHARS);
-
-// ═══════════════════════════════════════════════════════════
-//  MAP  (24×24, 0=floor, 1-4=wall types)
-//  Tokyo themed: dense blocks, alleys, open plazas
-// ═══════════════════════════════════════════════════════════
-const MAP_W = 32, MAP_H = 32;
-// prettier-ignore
-const MAP_DATA = [
-  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-  1,0,2,2,0,0,3,3,3,0,0,2,2,0,0,0,0,0,0,2,2,2,0,0,3,3,0,0,2,2,0,1,
-  1,0,2,2,0,0,3,3,3,0,0,2,2,0,0,0,0,0,0,2,2,2,0,0,3,3,0,0,2,2,0,1,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-  1,0,0,0,0,4,4,4,4,0,0,0,0,4,4,4,0,0,0,0,4,4,4,4,0,0,0,0,4,4,0,1,
-  1,0,3,0,0,4,0,0,4,0,0,0,0,4,0,4,0,0,0,0,4,0,0,4,0,0,0,0,4,4,0,1,
-  1,0,3,0,0,4,0,0,4,0,0,0,0,4,0,4,0,0,0,0,4,0,0,4,0,0,0,0,0,0,0,1,
-  1,0,3,0,0,4,4,4,4,0,0,0,0,4,4,4,0,0,0,0,4,4,4,4,0,0,0,0,0,0,0,1,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-  1,0,2,2,2,0,0,0,0,3,3,3,3,0,0,0,0,0,0,0,0,3,3,3,3,0,0,2,2,2,0,1,
-  1,0,2,0,2,0,0,0,0,3,0,0,3,0,0,0,0,0,0,0,0,3,0,0,3,0,0,2,0,2,0,1,
-  1,0,2,0,2,0,0,0,0,3,0,0,3,0,0,0,0,0,0,0,0,3,0,0,3,0,0,2,0,2,0,1,
-  1,0,2,2,2,0,0,0,0,3,3,3,3,0,0,0,0,0,0,0,0,3,3,3,3,0,0,2,2,2,0,1,
-  1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,
-  1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,
-  1,0,2,2,2,0,0,0,0,3,3,3,3,0,0,0,0,0,0,0,0,3,3,3,3,0,0,2,2,2,0,1,
-  1,0,2,0,2,0,0,0,0,3,0,0,3,0,0,0,0,0,0,0,0,3,0,0,3,0,0,2,0,2,0,1,
-  1,0,2,0,2,0,0,0,0,3,0,0,3,0,0,0,0,0,0,0,0,3,0,0,3,0,0,2,0,2,0,1,
-  1,0,2,2,2,0,0,0,0,3,3,3,3,0,0,0,0,0,0,0,0,3,3,3,3,0,0,2,2,2,0,1,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-  1,0,3,0,0,4,4,4,4,0,0,0,0,4,4,4,0,0,0,0,4,4,4,4,0,0,0,0,0,0,0,1,
-  1,0,3,0,0,4,0,0,4,0,0,0,0,4,0,4,0,0,0,0,4,0,0,4,0,0,0,0,0,0,0,1,
-  1,0,3,0,0,4,0,0,4,0,0,0,0,4,0,4,0,0,0,0,4,0,0,4,0,0,0,0,4,4,0,1,
-  1,0,0,0,0,4,4,4,4,0,0,0,0,4,4,4,0,0,0,0,4,4,4,4,0,0,0,0,4,4,0,1,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-  1,0,2,2,0,0,3,3,3,0,0,2,2,0,0,0,0,0,0,2,2,2,0,0,3,3,0,0,2,2,0,1,
-  1,0,2,2,0,0,3,3,3,0,0,2,2,0,0,0,0,0,0,2,2,2,0,0,3,3,0,0,2,2,0,1,
-  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-];
-
-// Wall colors per type
-const WALL_COLORS = [
-  null,
-  {light:'#3a5a8a',dark:'#2a4a7a'},  // 1: outer wall / border - blue steel
-  {light:'#5a6a8a',dark:'#4a5a7a'},  // 2: office block - slate
-  {light:'#6a4a7a',dark:'#5a3a6a'},  // 3: tower - purple
-  {light:'#4a6a5a',dark:'#3a5a4a'},  // 4: shop/low building - teal
-];
-
-const SPAWN_POINTS = [
-  [2.5,2.5],[29.5,2.5],[2.5,29.5],[29.5,29.5],
-  [8,8],[24,8],[8,24],[24,24],[16,2.5],[16,29.5],
-];
-
-function randomSpawn(){
-  return [...SPAWN_POINTS[Math.floor(Math.random()*SPAWN_POINTS.length)]];
-}
-
-// ═══════════════════════════════════════════════════════════
-//  CANVAS + RENDERER SETUP
-// ═══════════════════════════════════════════════════════════
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
-let W, H;
-
-function resize(){
-  W = canvas.width  = window.innerWidth;
-  H = canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resize);
-resize();
-
-// Off-screen buffer for raycaster (lower res for performance)
-const BUF_SCALE = 0.6; // render at 60% then scale up
-let buf, bctx, BW, BH;
-function resizeBuf(){
-  BW = Math.floor(W * BUF_SCALE);
-  BH = Math.floor(H * BUF_SCALE);
-  buf = document.createElement('canvas');
-  buf.width = BW; buf.height = BH;
-  bctx = buf.getContext('2d');
-}
-window.addEventListener('resize', resizeBuf);
-resizeBuf();
-
-// ═══════════════════════════════════════════════════════════
-//  GAME STATE
-// ═══════════════════════════════════════════════════════════
-let myId = null, myName = 'Player', ws = null;
-let camX = 8, camY = 8, camAngle = 0;
-let selectedChar = 'soul_striker', pendingChar = 'soul_striker';
-const keysDown = new Set();
-let mouseLocked = false, charSelectOpen = false;
-let lastSend = 0, lastTs = 0;
-
-const net = { players:{}, leaderboard:[], killLog:[] };
-let localCooldowns = {}; // key -> seconds remaining
-
-// Particles
-let particles = [];
-// zbuffer for sprite rendering
-let zBuffer = [];
-
-// ═══════════════════════════════════════════════════════════
-//  BUILD UI
-// ═══════════════════════════════════════════════════════════
-function buildMenuChars(){
-  const row = document.getElementById('charRow');
-  row.innerHTML = '';
-  CHAR_KEYS.forEach(k => {
-    const c = CHARS[k];
-    const d = document.createElement('div');
-    d.className = 'ccard' + (k === selectedChar ? ' sel' : '');
-    d.innerHTML = `<span class="ico">${c.ico}</span><span class="nm">${c.name}</span>`;
-    d.onclick = () => {
-      selectedChar = k;
-      document.querySelectorAll('.ccard').forEach(el => el.classList.remove('sel'));
-      d.classList.add('sel');
-    };
-    row.appendChild(d);
-  });
-}
-
-function buildCSOGrid(){
-  const grid = document.getElementById('csoGrid');
-  grid.innerHTML = '';
-  CHAR_KEYS.forEach(k => {
-    const c = CHARS[k];
-    const d = document.createElement('div');
-    d.className = 'cso-card' + (k === pendingChar ? ' sel2' : '');
-    d.innerHTML = `
-      <div class="cso-ico">${c.ico}</div>
-      <div class="cso-name" style="color:${c.color}">${c.name}</div>
-      <div class="cso-origin">${c.origin}</div>
-      <div class="slabel"><span>HP</span><span>${c.maxHp}</span></div>
-      <div class="sbar"><div class="sfill" style="width:${c.stats.hp}%;background:${c.color}"></div></div>
-      <div class="slabel"><span>Speed</span></div>
-      <div class="sbar"><div class="sfill" style="width:${c.stats.spd}%;background:${c.color}"></div></div>
-      <div class="slabel"><span>Power</span></div>
-      <div class="sbar"><div class="sfill" style="width:${c.stats.pow}%;background:${c.color}"></div></div>
-      <div class="cso-moves">${Object.entries(c.moves).map(([mk,mv])=>
-        `<div class="cso-move"><span>[${mk}]</span> ${mv.name}</div>`).join('')}</div>`;
-    d.onclick = () => {
-      pendingChar = k;
-      document.querySelectorAll('.cso-card').forEach(el => el.classList.remove('sel2'));
-      d.classList.add('sel2');
-    };
-    grid.appendChild(d);
-  });
-}
-
-function confirmChar(){
-  if(ws && ws.readyState === WebSocket.OPEN){
-    ws.send(JSON.stringify({type:'switch_character', character:pendingChar}));
-  }
-  closeCSO();
-}
-
-function openCSO(){
-  charSelectOpen = true;
-  pendingChar = net.players[myId]?.character || selectedChar;
-  buildCSOGrid();
-  document.getElementById('cso').classList.add('show');
-  document.exitPointerLock();
-  mouseLocked = false;
-}
-function closeCSO(){
-  charSelectOpen = false;
-  document.getElementById('cso').classList.remove('show');
-  canvas.requestPointerLock();
-}
-
-function buildMoveBar(charKey){
-  const c = CHARS[charKey] || CHARS.soul_striker;
-  const bar = document.getElementById('moves');
-  bar.innerHTML = '';
-  Object.entries(c.moves).forEach(([k, mv]) => {
-    const d = document.createElement('div');
-    d.className = 'mbox' + (mv.type === 'ultimate' ? ' ult' : '');
-    d.id = 'mb_' + k;
-    d.innerHTML = `
-      <div class="cdv" id="cdv_${k}" style="display:none">0.0s</div>
-      <div class="mk">[${k}]</div>
-      <div class="mn">${mv.short}</div>`;
-    bar.appendChild(d);
-  });
-}
-
-// ═══════════════════════════════════════════════════════════
-//  RAYCASTER
-// ═══════════════════════════════════════════════════════════
-function castRay(px, py, angle){
-  const rdx = Math.cos(angle), rdy = Math.sin(angle);
-  let mx = Math.floor(px), my = Math.floor(py);
-  const ddx = Math.abs(1/rdx), ddy = Math.abs(1/rdy);
-  let stepX, stepY, sdx, sdy;
-  if(rdx < 0){ stepX=-1; sdx=(px-mx)*ddx; } else { stepX=1; sdx=(mx+1-px)*ddx; }
-  if(rdy < 0){ stepY=-1; sdy=(py-my)*ddy; } else { stepY=1; sdy=(my+1-py)*ddy; }
-  let hit=0, side=0, dist=0;
-  for(let i=0;i<64;i++){
-    if(sdx < sdy){ sdx+=ddx; mx+=stepX; side=0; }
-    else         { sdy+=ddy; my+=stepY; side=1; }
-    if(mx<0||mx>=MAP_W||my<0||my>=MAP_H){ dist=64; hit=1; break; }
-    const cell = MAP_DATA[my*MAP_W+mx];
-    if(cell > 0){ hit=cell; dist = side===0 ? sdx-ddx : sdy-ddy; break; }
-  }
-  return { hit, dist:Math.max(0.05,dist), side };
-}
-
-function drawWorld(px, py, angle){
-  const bw = BW, bh = BH;
-  const halfH = bh/2;
-  const fov = Math.PI / 2.2;
-
-  // Sky - dark night tokyo
-  const skyGrad = bctx.createLinearGradient(0,0,0,halfH);
-  skyGrad.addColorStop(0,'#03070f');
-  skyGrad.addColorStop(1,'#071428');
-  bctx.fillStyle = skyGrad;
-  bctx.fillRect(0, 0, bw, halfH+2);
-
-  // Floor - dark concrete
-  const floorGrad = bctx.createLinearGradient(0,halfH,0,bh);
-  floorGrad.addColorStop(0,'#0f1018');
-  floorGrad.addColorStop(1,'#080810');
-  bctx.fillStyle = floorGrad;
-  bctx.fillRect(0, halfH, bw, halfH);
-
-  // Neon horizon glow
-  bctx.save();
-  const hglow = bctx.createLinearGradient(0,halfH-20,0,halfH+20);
-  hglow.addColorStop(0,'transparent');
-  hglow.addColorStop(0.5,'rgba(0,80,160,0.18)');
-  hglow.addColorStop(1,'transparent');
-  bctx.fillStyle = hglow;
-  bctx.fillRect(0, halfH-20, bw, 40);
-  bctx.restore();
-
-  // Cast rays
-  zBuffer = new Array(bw);
-  for(let col=0; col<bw; col++){
-    const rayAngle = angle - fov/2 + (col/bw)*fov;
-    const ray = castRay(px, py, rayAngle);
-
-    // Fix fisheye
-    const corrDist = ray.dist * Math.cos(rayAngle - angle);
-    zBuffer[col] = corrDist;
-
-    const wallH = Math.min(bh*3, Math.floor(bh / corrDist));
-    const top    = Math.max(0, Math.floor(halfH - wallH/2));
-    const bottom = Math.min(bh, Math.floor(halfH + wallH/2));
-
-    const wc = WALL_COLORS[ray.hit] || WALL_COLORS[1];
-    let baseColor = ray.side === 1 ? wc.dark : wc.light;
-
-    // Distance shading
-    const shade = Math.max(0, 1 - corrDist/18);
-    const rgb = hexToRgbArr(baseColor);
-    const r = Math.round(rgb[0]*shade);
-    const g = Math.round(rgb[1]*shade);
-    const b = Math.round(rgb[2]*shade);
-
-    bctx.fillStyle = `rgb(${r},${g},${b})`;
-    bctx.fillRect(col, top, 1, bottom-top);
-
-    // Neon top edge on walls
-    if(corrDist < 8 && top > 0){
-      bctx.fillStyle = `rgba(0,180,255,${Math.min(0.6,(1-corrDist/8)*0.4)})`;
-      bctx.fillRect(col, top, 1, 2);
-    }
-  }
-
-  // Draw wall grid lines (windows effect)
-  // bctx handles this via color variation above
-
-  // Floor grid lines for depth
-  bctx.save();
-  bctx.globalAlpha = 0.04;
-  bctx.strokeStyle = '#4488ff';
-  for(let i=0;i<16;i++){
-    const y = halfH + (i/16)*halfH;
-    bctx.beginPath(); bctx.moveTo(0,y); bctx.lineTo(bw,y); bctx.stroke();
-  }
-  bctx.restore();
-}
-
-// ═══════════════════════════════════════════════════════════
-//  SPRITE RENDERING  (other players)
-// ═══════════════════════════════════════════════════════════
-function drawSprites(px, py, angle){
-  const fov = Math.PI / 2.2;
-  const sprites = [];
-
-  for(const [id, p] of Object.entries(net.players)){
-    if(id === String(myId) || !p.alive) continue;
-    const dx = p.x - px, dy = p.z - py;
-    const dist = Math.sqrt(dx*dx+dy*dy);
-    if(dist < 0.3 || dist > 25) continue;
-
-    // Angle from player to sprite
-    const spriteAngle = Math.atan2(dy, dx);
-    let da = spriteAngle - angle;
-    while(da >  Math.PI) da -= Math.PI*2;
-    while(da < -Math.PI) da += Math.PI*2;
-
-    if(Math.abs(da) > fov/2 + 0.3) continue;
-    sprites.push({id, p, dist, da});
-  }
-
-  // Sort back to front
-  sprites.sort((a,b)=>b.dist-a.dist);
-
-  const bw = BW, bh = BH;
-  const halfH = bh/2;
-
-  for(const {id, p, dist, da} of sprites){
-    const char = CHARS[p.character] || CHARS.soul_striker;
-    const screenX = Math.floor(bw/2 + da/(fov/2) * bw/2);
-    const spriteH = Math.min(bh*2, Math.floor(bh/dist * 1.2));
-    const spriteW = Math.floor(spriteH * 0.55);
-    const sx = screenX - spriteW/2;
-    const sy = halfH - spriteH*0.75;
-
-    // Check against z-buffer - basic occlusion
-    let visible = false;
-    for(let i=Math.max(0,sx); i<Math.min(bw,sx+spriteW); i++){
-      if((zBuffer[i]||99) > dist){ visible=true; break; }
-    }
-    if(!visible) continue;
-
-    const shade = Math.max(0.2, 1 - dist/20);
-    bctx.save();
-    bctx.globalAlpha = shade;
-
-    const rgb = hexToRgbArr(char.color);
-
-    // BODY (suit - dark)
-    const suitColors = {
-      honored_one:'#1a1a3a', soul_striker:'#3a1a08',
-      shadow_summoner:'#0d0d22', king_of_curses:'#2a0808', iron_maiden:'#1a1030'
-    };
-    const suit = suitColors[p.character]||'#1a1a2a';
-
-    // Legs
-    bctx.fillStyle = suit;
-    bctx.fillRect(sx + spriteW*0.2, sy + spriteH*0.55, spriteW*0.28, spriteH*0.45);
-    bctx.fillRect(sx + spriteW*0.52, sy + spriteH*0.55, spriteW*0.28, spriteH*0.45);
-
-    // Torso
-    bctx.fillStyle = suit;
-    bctx.fillRect(sx + spriteW*0.15, sy + spriteH*0.28, spriteW*0.7, spriteH*0.3);
-
-    // Head
-    const headR = Math.max(3, spriteW*0.28);
-    const headX = sx + spriteW/2, headY = sy + spriteH*0.22;
-    bctx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
-    bctx.beginPath();
-    bctx.arc(headX, headY, headR, 0, Math.PI*2);
-    bctx.fill();
-
-    // Hair
-    const hairColors = {
-      honored_one:'#ffffff', soul_striker:'#cc4400',
-      shadow_summoner:'#111122', king_of_curses:'#c8a830', iron_maiden:'#cc2244'
-    };
-    bctx.fillStyle = hairColors[p.character]||'#333';
-    bctx.beginPath();
-    bctx.ellipse(headX, headY - headR*0.3, headR*1.1, headR*0.55, 0, Math.PI, 0);
-    bctx.fill();
-
-    // Eyes
-    if(headR > 5){
-      bctx.fillStyle = char.color;
-      bctx.beginPath(); bctx.arc(headX-headR*0.35, headY+headR*0.05, headR*0.22, 0, Math.PI*2); bctx.fill();
-      bctx.beginPath(); bctx.arc(headX+headR*0.35, headY+headR*0.05, headR*0.22, 0, Math.PI*2); bctx.fill();
-    }
-
-    // Invincibility ring
-    if(p.invincible){
-      bctx.strokeStyle = char.color;
-      bctx.lineWidth = 2;
-      bctx.globalAlpha = shade * 0.7;
-      bctx.beginPath();
-      bctx.arc(headX, sy + spriteH*0.45, spriteW*0.6, 0, Math.PI*2);
-      bctx.stroke();
-    }
-
-    // Rooted indicator
-    if(p.rooted){
-      bctx.fillStyle = '#666633';
-      bctx.fillRect(sx + spriteW*0.3, sy+spriteH*0.98, spriteW*0.4, spriteH*0.04);
-    }
-
-    bctx.restore();
-
-    // Name tag + HP bar (drawn on main canvas at correct scale)
-    if(dist < 15){
-      const scale = bw / W;
-      const scrX = screenX / scale;
-      const scrY = (sy) / scale;
-      const scaleH = spriteH / scale;
-
-      ctx.save();
-      ctx.globalAlpha = Math.min(1, shade * 1.5);
-      // HP bar
-      const bww = Math.max(40, scaleH*0.6);
-      const hpFrac = Math.max(0, p.hp/p.maxHp);
-      const hpCol = hpFrac>0.5?'#00ff88':hpFrac>0.25?'#ffcc00':'#ff3333';
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.fillRect(scrX-bww/2, scrY-16, bww, 5);
-      ctx.fillStyle = hpCol;
-      ctx.fillRect(scrX-bww/2, scrY-16, bww*hpFrac, 5);
-      // Name
-      const fs = Math.max(9, Math.min(16, scaleH*0.12));
-      ctx.font = `bold ${fs}px Rajdhani`;
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#fff';
-      ctx.fillText(p.name, scrX, scrY-20);
-      ctx.textAlign = 'left';
-      ctx.restore();
-    }
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-//  PARTICLES
-// ═══════════════════════════════════════════════════════════
-const EFFECT_COLORS = {
-  defense:'#00d4ff', projectile:'#ffe033', melee:'#ff4444',
-  dash:'#8888ff', curse:'#cc44ff', summon:'#44dd77',
-  cc:'#aaaaaa', aoe:'#ff8833', ultimate:'#ff2d7a', shield:'#00d4ff'
-};
-
-function spawnParticles(wx, wz, color, count=20){
-  for(let i=0;i<count;i++){
-    particles.push({
-      x:wx, y:0.5+Math.random()*1.5, z:wz,
-      vx:(Math.random()-.5)*4, vy:1.5+Math.random()*3, vz:(Math.random()-.5)*4,
-      color, life:0.6+Math.random()*0.8, maxLife:1.4,
-    });
-  }
-}
-
-function updateParticles(dt){
-  for(let i=particles.length-1;i>=0;i--){
-    const p=particles[i];
-    p.x+=p.vx*dt; p.y+=p.vy*dt; p.z+=p.vz*dt;
-    p.vy-=5*dt; p.life-=dt;
-    if(p.life<=0) particles.splice(i,1);
-  }
-}
-
-function drawParticles(px, py, angle){
-  const fov = Math.PI / 2.2;
-  for(const p of particles){
-    const dx = p.x - px, dz = p.z - py;
-    const dist = Math.sqrt(dx*dx+dz*dz);
-    if(dist<0.1||dist>20) continue;
-    const spriteAngle = Math.atan2(dz,dx);
-    let da = spriteAngle - angle;
-    while(da> Math.PI) da-=Math.PI*2;
-    while(da<-Math.PI) da+=Math.PI*2;
-    if(Math.abs(da)>fov/2+0.2) continue;
-
-    const screenX = W/2 + da/(fov/2)*W/2;
-    const screenY = H/2 - (p.y-0.5)*H/(dist+0.1)*0.8;
-    const r = Math.max(1.5, 14/dist);
-    const alpha = (p.life/p.maxLife)*0.9;
-
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = p.color;
-    ctx.shadowBlur = 8;
-    ctx.shadowColor = p.color;
-    ctx.beginPath();
-    ctx.arc(screenX, screenY, r, 0, Math.PI*2);
-    ctx.fill();
-    ctx.restore();
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-//  MINIMAP
-// ═══════════════════════════════════════════════════════════
-function drawMinimap(px, py, angle){
-  const size = 140, cellSize = size/MAP_W;
-  const mx = W - size - 14, my = H - size - 14;
-
-  ctx.save();
-  ctx.globalAlpha = 0.82;
-  ctx.fillStyle = 'rgba(0,0,0,0.7)';
-  ctx.strokeStyle = 'rgba(0,212,255,0.3)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.rect(mx, my, size, size);
-  ctx.fill(); ctx.stroke();
-
-  // Map cells
-  for(let y=0;y<MAP_H;y++){
-    for(let x=0;x<MAP_W;x++){
-      const cell = MAP_DATA[y*MAP_W+x];
-      if(cell===0) continue;
-      const colors=['#000','#2a3a5a','#3a4050','#3a2a50','#2a4040'];
-      ctx.fillStyle = colors[cell]||'#333';
-      ctx.fillRect(mx+x*cellSize, my+y*cellSize, cellSize-0.3, cellSize-0.3);
-    }
-  }
-
-  // Other players
-  for(const [id, p] of Object.entries(net.players)){
-    if(id===String(myId)||!p.alive) continue;
-    const char = CHARS[p.character]||CHARS.soul_striker;
-    ctx.fillStyle = char.color;
-    ctx.beginPath();
-    ctx.arc(mx+p.x*cellSize, my+p.z*cellSize, 3, 0, Math.PI*2);
-    ctx.fill();
-  }
-
-  // Me - white dot + direction line
-  const mpx = mx + px*cellSize, mpy = my + py*cellSize;
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath(); ctx.arc(mpx, mpy, 3.5, 0, Math.PI*2); ctx.fill();
-  ctx.strokeStyle = '#00d4ff';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(mpx, mpy);
-  ctx.lineTo(mpx + Math.cos(angle)*10, mpy + Math.sin(angle)*10);
-  ctx.stroke();
-
-  ctx.restore();
-}
-
-// ═══════════════════════════════════════════════════════════
-//  HUD UPDATES
-// ═══════════════════════════════════════════════════════════
-let prevHp = 100;
-function updateHUD(){
-  const me = net.players[myId];
-  if(!me) return;
-  const char = CHARS[me.character]||CHARS.soul_striker;
-
-  document.getElementById('charLabel').textContent = char.name;
-  document.getElementById('kdLabel').textContent = `K: ${me.kills}  D: ${me.deaths}`;
-
-  const frac = Math.max(0, Math.min(1, me.hp/me.maxHp));
-  const fill = document.getElementById('hpFill');
-  fill.style.width = (frac*100)+'%';
-  fill.style.background = frac>0.5?'#00d4ff':frac>0.25?'#ffe033':'#ff2d2d';
-  document.getElementById('hpNum').textContent = `${Math.ceil(me.hp)} / ${me.maxHp}`;
-
-  if(me.hp < prevHp) triggerFlash();
-  prevHp = me.hp;
-
-  document.getElementById('dead').className = me.alive ? '' : 'show';
-
-  // Move bar cooldowns
-  if(me.cooldowns){
-    localCooldowns = me.cooldowns;
-  }
-  Object.entries(char.moves).forEach(([k,mv])=>{
-    const cd = localCooldowns[k]||0;
-    const ready = cd<=0;
-    const box = document.getElementById('mb_'+k);
-    if(!box) return;
-    box.className='mbox'+(mv.type==='ultimate'?' ult':'')+(ready?' rdy':'');
-    const cdv = document.getElementById('cdv_'+k);
-    if(cdv){ cdv.style.display=ready?'none':'flex'; cdv.textContent=cd.toFixed(1)+'s'; }
-  });
-
-  // Leaderboard
-  const rows = document.getElementById('lbRows');
-  rows.innerHTML = net.leaderboard.slice(0,8).map((e,i)=>`
-    <div class="lbrow${e.name===myName?' me':''}">
-      <span class="lbrank">#${i+1}</span>
-      <span class="lbname">${e.name.substring(0,11)}</span>
-      <span class="lbkd">${e.kills}/${e.deaths}</span>
-    </div>`).join('');
-}
-
-function triggerFlash(){
-  const f = document.getElementById('flash');
-  f.style.opacity = '1';
-  setTimeout(()=>f.style.opacity='0', 120);
-}
-
-let killFeedTimer = null;
-function addKillFeed(text){
-  const kf = document.getElementById('kf');
-  const d = document.createElement('div');
-  d.className = 'kfe';
-  d.textContent = text;
-  kf.prepend(d);
-  setTimeout(()=>d.remove(), 5000);
-}
-
-// ═══════════════════════════════════════════════════════════
-//  NETWORK
-// ═══════════════════════════════════════════════════════════
-function startGame(){
-  const url = document.getElementById('srvUrl').value.trim();
-  const name = document.getElementById('pName').value.trim() || 'Player';
-  const err = document.getElementById('errTxt');
-  const btn = document.getElementById('playBtn');
-  err.textContent = '';
-
-  if(!url){ err.textContent='Enter your server URL'; return; }
-
-  let wsUrl = url;
-  if(!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) wsUrl = 'wss://'+wsUrl;
-  if(location.protocol==='https:' && wsUrl.startsWith('ws://')) wsUrl='wss://'+wsUrl.slice(5);
-
-  myName = name;
-  btn.disabled = true;
-  btn.textContent = 'Connecting...';
-
-  const timeout = setTimeout(()=>{
-    err.textContent='Connection timed out. Check URL and server.';
-    btn.disabled=false; btn.textContent='JOIN BATTLE';
-    if(ws) ws.close();
-  }, 8000);
-
-  try{ ws = new WebSocket(wsUrl); } catch(e){
-    err.textContent='Invalid URL: '+e.message;
-    btn.disabled=false; btn.textContent='JOIN BATTLE';
-    return;
-  }
-
-  ws.onopen=()=>{
-    ws.send(JSON.stringify({type:'join', name:myName, character:selectedChar}));
-  };
-
-  ws.onmessage=e=>{
-    try{
-      const msg = JSON.parse(e.data);
-      if(msg.type==='welcome'){
-        clearTimeout(timeout);
-        myId = msg.yourId;
-        // Hide menu, show HUD, start game
-        document.getElementById('menu').style.display='none';
-        document.getElementById('hud').classList.add('show');
-        const me = {x:8,y:0,z:8,character:selectedChar};
-        net.players[myId] = {id:myId,name:myName,character:selectedChar,
-          x:8,z:8,hp:CHARS[selectedChar].maxHp,maxHp:CHARS[selectedChar].maxHp,
-          kills:0,deaths:0,alive:true,yaw:0,cooldowns:{}};
-        camX=8; camY=8;
-        buildMoveBar(selectedChar);
-        setOnline(true);
-        canvas.requestPointerLock();
-      }
-      else if(msg.type==='state'){
-        net.players = msg.players;
-        net.leaderboard = msg.leaderboard||[];
-        net.killLog = msg.killLog||[];
-        updateHUD();
-        // Sync char if changed
-        const me = net.players[myId];
-        if(me && me.character !== selectedChar){
-          selectedChar = me.character;
-          buildMoveBar(selectedChar);
+    <div id="arena"></div>
+
+    <!-- Include a highly reliable public server messaging script automatically -->
+    <script src="https://unpkg.com"></script>
+    <script>
+        const menu = document.getElementById('menu');
+        const arena = document.getElementById('arena');
+        const usernameInput = document.getElementById('username');
+        const lobbyInput = document.getElementById('lobbyId');
+        const joinBtn = document.getElementById('joinBtn');
+
+        let peer = null;
+        let connections = [];
+        let myId = '';
+        let myName = 'Sorcerer';
+        let myPos = { x: Math.random() * 500 + 100, y: Math.random() * 500 + 100 };
+        let remotePlayers = {};
+
+        joinBtn.addEventListener('click', () => {
+            myName = usernameInput.value.trim() || 'Sorcerer';
+            const targetLobby = lobbyInput.value.trim();
+
+            // Connects instantly to the free public cloud communications relay
+            peer = new Peer(targetLobby ? null : 'jjk-lobby-' + Math.floor(Math.random() * 90000 + 10000));
+
+            peer.on('open', (id) => {
+                myId = id;
+                menu.style.display = 'none';
+                arena.style.display = 'block';
+
+                if (!targetLobby) {
+                    // Host Mode
+                    alert(`Lobby Created! Tell your friend to enter this code: ${id}`);
+                    spawnPlayer(myId, myName, myPos.x, myPos.y, false);
+                } else {
+                    // Client Join Mode
+                    const conn = peer.connect(targetLobby);
+                    setupConnection(conn);
+                }
+            });
+
+            peer.on('connection', (conn) => {
+                setupConnection(conn);
+            });
+        });
+
+        function setupConnection(conn) {
+            connections.push(conn);
+            conn.on('open', () => {
+                // Send our initial handshake payload
+                conn.send({ type: 'join', id: myId, name: myName, x: myPos.x, y: myPos.y });
+                spawnPlayer(myId, myName, myPos.x, myPos.y, false);
+            });
+
+            conn.on('data', (data) => {
+                if (data.type === 'join') {
+                    spawnPlayer(data.id, data.name, data.x, data.y, true);
+                    // Reply back so they map us too
+                    conn.send({ type: 'reply', id: myId, name: myName, x: myPos.x, y: myPos.y });
+                } else if (data.type === 'reply') {
+                    spawnPlayer(data.id, data.name, data.x, data.y, true);
+                } else if (data.type === 'move') {
+                    updateRemotePosition(data.id, data.x, data.y);
+                }
+            });
         }
-      }
-      else if(msg.type==='kill_feed'){
-        addKillFeed(msg.attacker+' eliminated '+msg.victim+' with '+msg.move+'!');
-        net.leaderboard = msg.leaderboard||net.leaderboard;
-      }
-      else if(msg.type==='move_effect'){
-        const col = EFFECT_COLORS[msg.effect]||'#fff';
-        spawnParticles(msg.x||0, msg.z||0, col, 24);
-      }
-    }catch(ex){}
-  };
 
-  ws.onerror=()=>{
-    clearTimeout(timeout);
-    err.textContent='Could not connect. Is the server deployed and running?';
-    btn.disabled=false; btn.textContent='JOIN BATTLE';
-  };
+        function spawnPlayer(id, name, x, y, isRemote) {
+            if (document.getElementById(id)) return;
+            const p = document.createElement('div');
+            p.id = id;
+            p.className = `player ${isRemote ? 'remote' : ''}`;
+            p.style.left = `${x}px`;
+            p.style.top = `${y}px`;
+            p.innerText = name.substring(0, 2).toUpperCase();
 
-  ws.onclose=()=>{
-    clearTimeout(timeout);
-    setOnline(false);
-  };
-}
+            const tag = document.createElement('div');
+            tag.className = 'name-tag';
+            tag.innerText = name;
+            p.appendChild(tag);
 
-function setOnline(on){
-  document.getElementById('dotc').className = on?'on':'';
-  document.getElementById('dotlbl').textContent = on?'Online':'Offline';
-}
+            arena.appendChild(p);
+            if (isRemote) remotePlayers[id] = p;
+        }
 
-// ═══════════════════════════════════════════════════════════
-//  INPUT
-// ═══════════════════════════════════════════════════════════
-document.addEventListener('pointerlockchange',()=>{
-  mouseLocked = !!document.pointerLockElement;
-});
-canvas.addEventListener('click',()=>{
-  if(myId && !charSelectOpen) canvas.requestPointerLock();
-});
+        function updateRemotePosition(id, x, y) {
+            const p = document.getElementById(id);
+            if (p) {
+                p.style.left = `${x}px`;
+                p.style.top = `${y}px`;
+            }
+        }
 
-document.addEventListener('mousemove',e=>{
-  if(!mouseLocked||charSelectOpen) return;
-  camAngle += e.movementX * 0.002;
-});
+        // Standard Keyboard Movement Controls
+        window.addEventListener('keydown', (e) => {
+            if (arena.style.display !== 'block') return;
+            const speed = 15;
+            if (e.key === 'ArrowUp' || e.key === 'w') myPos.y -= speed;
+            if (e.key === 'ArrowDown' || e.key === 's') myPos.y += speed;
+            if (e.key === 'ArrowLeft' || e.key === 'a') myPos.x -= speed;
+            if (e.key === 'ArrowRight' || e.key === 'd') myPos.x += speed;
 
-document.addEventListener('keydown',e=>{
-  keysDown.add(e.code);
-  if(!myId) return;
+            const myEl = document.getElementById(myId);
+            if (myEl) {
+                myEl.style.left = `${myPos.x}px`;
+                myEl.style.top = `${myPos.y}px`;
+            }
 
-  if(e.code==='Tab'){ e.preventDefault(); charSelectOpen?closeCSO():openCSO(); return; }
-  if(e.code==='Escape'){ if(charSelectOpen) closeCSO(); return; }
-  if(e.code==='Enter' && charSelectOpen){ confirmChar(); return; }
-
-  if(!charSelectOpen){
-    const moveMap={KeyQ:'Q',KeyE:'E',KeyR:'R',KeyF:'F'};
-    const mk = moveMap[e.code];
-    if(mk && ws && ws.readyState===WebSocket.OPEN){
-      ws.send(JSON.stringify({type:'use_move',key:mk}));
-    }
-  }
-});
-document.addEventListener('keyup',e=>keysDown.delete(e.code));
-
-// ═══════════════════════════════════════════════════════════
-//  GAME LOOP
-// ═══════════════════════════════════════════════════════════
-function gameLoop(ts){
-  requestAnimationFrame(gameLoop);
-  const dt = Math.min((ts - lastTs)/1000, 0.05);
-  lastTs = ts;
-
-  if(!myId){
-    // Just show black canvas while on menu
-    ctx.fillStyle='#000';
-    ctx.fillRect(0,0,W,H);
-    return;
-  }
-
-  // Movement
-  const me = net.players[myId];
-  const alive = me ? me.alive : false;
-  if(alive && mouseLocked && !charSelectOpen){
-    const char = CHARS[me?.character||selectedChar]||CHARS.soul_striker;
-    const spd = char.speed * dt;
-    const fwdX = Math.cos(camAngle), fwdY = Math.sin(camAngle);
-    const rtX  = Math.cos(camAngle+Math.PI/2), rtY = Math.sin(camAngle+Math.PI/2);
-    let nx=camX, ny=camY;
-
-    if(keysDown.has('KeyW')){ nx+=fwdX*spd; ny+=fwdY*spd; }
-    if(keysDown.has('KeyS')){ nx-=fwdX*spd; ny-=fwdY*spd; }
-    if(keysDown.has('KeyA')){ nx-=rtX*spd;  ny-=rtY*spd;  }
-    if(keysDown.has('KeyD')){ nx+=rtX*spd;  ny+=rtY*spd;  }
-
-    // Collision - slide against walls
-    if(nx>0.3&&nx<MAP_W-0.3&&ny>0.3&&ny<MAP_H-0.3){
-      const cx=Math.floor(nx), cy=Math.floor(camY);
-      const ncx=Math.floor(camX), ncy=Math.floor(ny);
-      if(MAP_DATA[cy*MAP_W+cx]===0) camX=nx;
-      if(MAP_DATA[ncy*MAP_W+ncx]===0) camY=ny;
-    }
-
-    // Send position
-    const now=Date.now();
-    if(now-lastSend>33 && ws && ws.readyState===WebSocket.OPEN){
-      ws.send(JSON.stringify({type:'move',x:camX,y:0,z:camY,yaw:camAngle}));
-      lastSend=now;
-    }
-  }
-
-  // If dead, respawn camera at spawn point (server will move us)
-  if(me && !me.alive){
-    // Drift camera toward spawn
-    const sp = randomSpawn();
-  }
-
-  updateParticles(dt);
-
-  // ── RENDER ──────────────────────────────────────────────
-  // 1. Raycaster to buffer
-  drawWorld(camX, camY, camAngle);
-
-  // 2. Sprites to buffer
-  bctx.save();
-  // sprites drawn directly using bctx then flushed below
-  // We'll do a two-pass: first draw world to buf, then scale to canvas,
-  // then draw sprites + particles on canvas at full res
-
-  bctx.restore();
-
-  // 3. Scale buffer to main canvas
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(buf, 0, 0, W, H);
-
-  // 4. Draw sprites at canvas resolution (better quality)
-  drawSpritesOnCanvas(camX, camY, camAngle);
-
-  // 5. Particles on canvas
-  drawParticles(camX, camY, camAngle);
-
-  // 6. Minimap
-  drawMinimap(camX, camY, camAngle);
-
-  // 7. Vignette
-  const vig = ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.9);
-  vig.addColorStop(0,'transparent');
-  vig.addColorStop(1,'rgba(0,0,0,0.55)');
-  ctx.fillStyle=vig; ctx.fillRect(0,0,W,H);
-}
-
-function drawSpritesOnCanvas(px, py, angle){
-  const fov = Math.PI / 2.2;
-  const sprites = [];
-
-  for(const [id, p] of Object.entries(net.players)){
-    if(id===String(myId)||!p.alive) continue;
-    const dx=p.x-px, dy=p.z-py;
-    const dist=Math.sqrt(dx*dx+dy*dy);
-    if(dist<0.3||dist>25) continue;
-    let da=Math.atan2(dy,dx)-angle;
-    while(da> Math.PI) da-=Math.PI*2;
-    while(da<-Math.PI) da+=Math.PI*2;
-    if(Math.abs(da)>fov/2+0.3) continue;
-    sprites.push({id,p,dist,da});
-  }
-  sprites.sort((a,b)=>b.dist-a.dist);
-
-  for(const {id,p,dist,da} of sprites){
-    const char=CHARS[p.character]||CHARS.soul_striker;
-    const screenX=W/2+da/(fov/2)*W/2;
-    const spriteH=Math.min(H*2,Math.floor(H/dist*1.0));
-    const spriteW=Math.floor(spriteH*0.5);
-    const sx=screenX-spriteW/2;
-    const sy=H/2-spriteH*0.72;
-
-    // Z-check (compare against buffer)
-    const bufCol=Math.floor((screenX/W)*BW);
-    const bufDist=zBuffer[bufCol]||99;
-    if(dist >= bufDist+0.15) continue;
-
-    const shade=Math.max(0.2,1-dist/18);
-    ctx.save();
-    ctx.globalAlpha=shade;
-
-    const suitColors={
-      honored_one:'#1a1a3e',soul_striker:'#3a1808',
-      shadow_summoner:'#0d0d22',king_of_curses:'#2a0808',iron_maiden:'#1a1030'
-    };
-    const suit=suitColors[p.character]||'#1a1a2a';
-    const rgb=hexToRgbArr(char.color);
-
-    // Legs
-    ctx.fillStyle=suit;
-    ctx.fillRect(sx+spriteW*0.18,sy+spriteH*0.55,spriteW*0.29,spriteH*0.45);
-    ctx.fillRect(sx+spriteW*0.53,sy+spriteH*0.55,spriteW*0.29,spriteH*0.45);
-    // Torso
-    ctx.fillRect(sx+spriteW*0.13,sy+spriteH*0.27,spriteW*0.74,spriteH*0.3);
-    // Head
-    const hr=Math.max(4,spriteW*0.3);
-    const hx2=sx+spriteW/2,hy2=sy+spriteH*0.2;
-    ctx.fillStyle=`rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
-    ctx.beginPath();ctx.arc(hx2,hy2,hr,0,Math.PI*2);ctx.fill();
-    // Hair
-    const hairColors={honored_one:'#fff',soul_striker:'#cc4400',shadow_summoner:'#111',king_of_curses:'#c8a830',iron_maiden:'#cc2244'};
-    ctx.fillStyle=hairColors[p.character]||'#333';
-    ctx.beginPath();ctx.ellipse(hx2,hy2-hr*0.3,hr*1.15,hr*0.55,0,Math.PI,0);ctx.fill();
-    // Eyes glow
-    if(hr>7){
-      ctx.fillStyle=char.color;
-      ctx.shadowBlur=6;ctx.shadowColor=char.color;
-      ctx.beginPath();ctx.arc(hx2-hr*0.35,hy2+hr*0.05,hr*0.2,0,Math.PI*2);ctx.fill();
-      ctx.beginPath();ctx.arc(hx2+hr*0.35,hy2+hr*0.05,hr*0.2,0,Math.PI*2);ctx.fill();
-      ctx.shadowBlur=0;
-    }
-
-    // Invincibility
-    if(p.invincible){
-      ctx.globalAlpha=shade*0.5;
-      ctx.strokeStyle=char.color;
-      ctx.lineWidth=2;
-      ctx.shadowBlur=14;ctx.shadowColor=char.color;
-      ctx.beginPath();ctx.arc(hx2,sy+spriteH*0.42,spriteW*0.65,0,Math.PI*2);ctx.stroke();
-      ctx.shadowBlur=0;
-    }
-
-    ctx.restore();
-
-    // Name + HP bar above sprite
-    if(dist<15){
-      const bww=Math.max(40,spriteW*1.2);
-      const hpFrac=Math.max(0,p.hp/p.maxHp);
-      const hpCol=hpFrac>0.5?'#00ff88':hpFrac>0.25?'#ffcc00':'#ff3333';
-      ctx.save();
-      ctx.globalAlpha=Math.min(1,shade*1.8);
-      ctx.fillStyle='rgba(0,0,0,0.6)';
-      ctx.fillRect(screenX-bww/2,sy-18,bww,5);
-      ctx.fillStyle=hpCol;
-      ctx.fillRect(screenX-bww/2,sy-18,bww*hpFrac,5);
-      const fs=Math.max(10,Math.min(18,spriteH*0.1));
-      ctx.font=`bold ${fs}px Rajdhani`;
-      ctx.textAlign='center';
-      ctx.fillStyle='#fff';
-      ctx.shadowBlur=4;ctx.shadowColor='#000';
-      ctx.fillText(p.name,screenX,sy-22);
-      ctx.shadowBlur=0;
-      ctx.textAlign='left';
-      ctx.restore();
-    }
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-//  UTILS
-// ═══════════════════════════════════════════════════════════
-const _rgbCache = {};
-function hexToRgbArr(hex){
-  if(_rgbCache[hex]) return _rgbCache[hex];
-  const r=parseInt(hex.slice(1,3),16)||0;
-  const g=parseInt(hex.slice(3,5),16)||0;
-  const b=parseInt(hex.slice(5,7),16)||0;
-  return (_rgbCache[hex]=[r,g,b]);
-}
-
-// ═══════════════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════════════
-buildMenuChars();
-requestAnimationFrame(gameLoop);
-</script>
+            // Sync with everyone instantly over the network mesh
+            connections.forEach(conn => {
+                if (conn.open) conn.send({ type: 'move', id: myId, x: myPos.x, y: myPos.y });
+            });
+        });
+    </script>
 </body>
 </html>
-<!-- nixpacks.buildpack: node -->
-<!-- nixpacks.start: npx serve -s . -l tcp://0.0.0.0:$PORT -->
